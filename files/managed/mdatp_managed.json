@@ -1,0 +1,21 @@
+{
+   "antivirusEngine":{
+      "enforcementLevel":"passive"
+   },
+   "cloudService":{
+      "automaticDefinitionUpdateEnabled":true,
+      "automaticSampleSubmissionConsent":"safe",
+      "enabled":true
+   },
+   "edr": {
+      "groupIds":"",
+      "tags": [
+                {
+                "key": "GROUP",
+                "value": "Server - Linux - Standard"
+                }
+              ]
+          }
+}
+
+

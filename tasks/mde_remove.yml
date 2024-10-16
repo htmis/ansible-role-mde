@@ -1,0 +1,9 @@
+---
+- name: Install MDE
+  hosts: all
+
+  tasks:
+    - name: Remove MDATP
+      package:
+        name: mdatp
+        state: absent

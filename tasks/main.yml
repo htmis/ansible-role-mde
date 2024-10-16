@@ -1,0 +1,122 @@
+---
+- name: remove xagt(Fire Eye) packages
+  package:
+    name: xagt
+    state: absent
+
+- name: Install python*-dnf if not exists
+  package:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - python*-dnf
+    - python3
+
+#- name: Add  Microsoft yum repository for MDATP
+#  yum_repository:
+#    name: microsoft
+#    file: mdatp-101.24062.0001-1.x86_64
+#    baseurl: "http://htmis.com/ms"
+#    description: Microsoft Defender for Endpoint
+#    gpgcheck: no
+#    enabled: yes
+#  when: ansible_os_family == "RedHat"
+
+- name: Add Microsoft DNF/YUM key
+  rpm_key:
+    state: present
+    key: https://packages.microsoft.com/keys/microsoft.asc
+  when: ansible_os_family == "RedHat"
+
+- name: Add Microsoft yum repository for MDATP
+  yum_repository:
+    name: packages-microsoft-prod
+    description: Microsoft Defender for Endpoint
+    file: microsoft-prod
+    baseurl: https://packages.microsoft.com/{{ ansible_distribution|lower }}/{{ ansible_distribution_major_version }}/prod/
+    gpgcheck: yes
+    enabled: Yes
+  when: ansible_os_family == "RedHat"
+
+- name: Install MDATP on RedHat
+  dnf:
+    name: mdatp
+    state: present
+    enablerepo: packages-microsoft-[prod]
+  when: ansible_os_family == "RedHat"
+
+- name: Add Microsoft APT key
+  apt_key:
+    url: https://packages.microsoft.com/keys/microsoft.asc
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Add Microsoft apt repository for MDATP
+  apt_repository:
+    repo: deb [arch=amd64] https://packages.microsoft.com/{{ ansible_distribution|lower }}/{{ ansible_distribution_version }}/prod/ {{ ansible_distribution_release }} main
+    update_cache: yes
+    state: present
+    filename: microsoft-{{ ansible_distribution|lower }}-{{ ansible_distribution_release }}-prod
+  when: ansible_os_family == "Debian"
+
+- name: Install MDATP on Debian
+  apt:
+    name: mdatp
+    state: present
+    update_cache: yes
+  when: ansible_os_family == "Debian"
+
+- name: Copy MicrosoftDefenderATPOnboardingLinuxServer.py to /etc/opt/microsoft/mdatp/
+  copy:
+    src: "files/scripts/MicrosoftDefenderATPOnboardingLinuxServer.py"
+    dest: /etc/opt/microsoft/mdatp
+    mode: 0700
+    owner: root
+    group: root
+
+- name: Copy mdatp_managed.json to /etc/opt/microsoft/mdatp/managed
+  copy:
+    src: "files/managed/mdatp_managed.json"
+    dest: /etc/opt/microsoft/mdatp/managed
+    mode: 0644
+    owner: root
+    group: root
+
+- name: Run python3 /etc/opt/microsoft/mdatp/MicrosoftDefenderATPOnboardingLinuxServer.py
+  command: python3 /etc/opt/microsoft/mdatp/MicrosoftDefenderATPOnboardingLinuxServer.py
+#  when:
+#    - ansible_distribution_major_version == "8"
+
+#- name: Get status of mdatp edr early-preview
+#  shell: /usr/bin/mdatp health status | grep edr_early_preview_enabled | awk '{print $3}'|  sed 's/"//g'
+#  register: edr_enabled_status
+#  changed_when: false
+#
+#- name: Run /usr/bin/mdatp edr early-preview enable
+#  command: /usr/bin/mdatp edr early-preview enable
+#  when:  'edr_enabled_status.stdout == "disabled"'
+#
+#- name: Get status of, "mdatp exclusion process add --path /opt/ds_agent/ds_am"
+#  shell: /usr/bin/mdatp exclusion process add --path /opt/ds_agent/ds_am | awk '{print $2}' | head -n 1
+#  register: ds_am_exclusion_status
+#  changed_when: false
+#  tags: ds_am
+#
+#- name: Run /usr/bin/mdatp edr early-preview enable
+#  command: /usr/bin/mdatp exclusion process add --path /opt/ds_agent/ds_am
+#  when:  'edr_enabled_status.stdout == "not"'
+#  tags: ds_am
+#
+#- name: stop mdatp
+#  systemd:
+#    name: mdatp
+#    state: stopped
+#
+- name: restart auditd and give mdatp time to close
+  shell: |
+    sleep 3 && service auditd restart
+
+- name: start mdatp
+  systemd:
+    name: mdatp
+    state: started
