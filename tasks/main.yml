@@ -12,16 +12,6 @@
     - python*-dnf
     - python3
 
-#- name: Add  Microsoft yum repository for MDATP
-#  yum_repository:
-#    name: microsoft
-#    file: mdatp-101.24062.0001-1.x86_64
-#    baseurl: "http://htmis.com/ms"
-#    description: Microsoft Defender for Endpoint
-#    gpgcheck: no
-#    enabled: yes
-#  when: ansible_os_family == "RedHat"
-
 - name: Add Microsoft DNF/YUM key
   rpm_key:
     state: present
@@ -87,34 +77,14 @@
 #  when:
 #    - ansible_distribution_major_version == "8"
 
-#- name: Get status of mdatp edr early-preview
-#  shell: /usr/bin/mdatp health status | grep edr_early_preview_enabled | awk '{print $3}'|  sed 's/"//g'
-#  register: edr_enabled_status
-#  changed_when: false
-#
-#- name: Run /usr/bin/mdatp edr early-preview enable
-#  command: /usr/bin/mdatp edr early-preview enable
-#  when:  'edr_enabled_status.stdout == "disabled"'
-#
-#- name: Get status of, "mdatp exclusion process add --path /opt/ds_agent/ds_am"
-#  shell: /usr/bin/mdatp exclusion process add --path /opt/ds_agent/ds_am | awk '{print $2}' | head -n 1
-#  register: ds_am_exclusion_status
-#  changed_when: false
-#  tags: ds_am
-#
-#- name: Run /usr/bin/mdatp edr early-preview enable
-#  command: /usr/bin/mdatp exclusion process add --path /opt/ds_agent/ds_am
-#  when:  'edr_enabled_status.stdout == "not"'
-#  tags: ds_am
-#
 #- name: stop mdatp
 #  systemd:
 #    name: mdatp
 #    state: stopped
 #
-- name: restart auditd and give mdatp time to close
-  shell: |
-    sleep 3 && service auditd restart
+#- name: restart auditd and give mdatp time to close
+#  shell: |
+#    sleep 3 && service auditd restart
 
 - name: start mdatp
   systemd:
